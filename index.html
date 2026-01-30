@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通信課程編入適正診断</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e67e22;
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 700px;
+            padding: 40px;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 40px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        h1 { font-size: 26px; margin-bottom: 10px; color: var(--primary-color); position: relative; z-index: 2; }
+        h2 { font-size: 22px; margin-bottom: 15px; color: var(--primary-color); }
+        p { line-height: 1.8; margin-bottom: 20px; font-size: 16px; position: relative; z-index: 2; }
+
+        /* 装飾画像 */
+        .deco-img { position: absolute; width: 100px; height: auto; z-index: 1; opacity: 0.9; }
+        .top-left { top: -10px; left: -10px; transform: rotate(-15deg); }
+        .top-right { top: -10px; right: -10px; transform: rotate(15deg); }
+        .bottom-left { bottom: -10px; left: -10px; transform: rotate(15deg); }
+        .bottom-right { bottom: -10px; right: -10px; transform: rotate(-15deg); }
+
+        /* ボタン */
+        .btn-start, .btn-retry {
+            background-color: var(--accent-color); color: white; border: none; padding: 15px 50px;
+            font-size: 18px; border-radius: 50px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; z-index: 2;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        .btn-start:hover, .btn-retry:hover { background-color: #d35400; transform: translateY(-2px); }
+
+        /* 属性入力フォーム */
+        .form-container { display: none; text-align: left; max-width: 400px; margin: 0 auto; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-weight: bold; margin-bottom: 8px; color: var(--primary-color); }
+        .form-select {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+            font-size: 16px; background-color: #fff; appearance: none; /* スマホでの見た目統一 */
+        }
+        .form-note { font-size: 12px; color: #888; margin-top: 5px; }
+
+        /* 質問画面 */
+        .quiz-container { display: none; text-align: left; }
+        .progress { font-size: 14px; color: #888; text-align: center; margin-bottom: 20px; font-weight: bold; }
+        .question-text { font-size: 20px; font-weight: bold; margin-bottom: 30px; text-align: center; color: var(--primary-color); }
+        .options { display: flex; flex-direction: column; gap: 15px; }
+        .option-btn {
+            background-color: white; border: 2px solid #e0e0e0; padding: 18px 20px; border-radius: 12px;
+            font-size: 16px; cursor: pointer; transition: all 0.2s; text-align: left; line-height: 1.5; color: #444;
+        }
+        .option-btn:hover { background-color: #fff8f0; border-color: var(--accent-color); color: #d35400; transform: translateX(5px); }
+
+        /* ローディング画面 */
+        .loading-container { display: none; text-align: center; padding: 40px 0; }
+        .spinner {
+            width: 60px; height: 60px; border: 6px solid #f3f3f3; border-top: 6px solid var(--accent-color);
+            border-radius: 50%; margin: 0 auto 30px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { font-size: 20px; font-weight: bold; color: var(--primary-color); margin-bottom: 10px; }
+        .loading-subtext { font-size: 14px; color: #888; }
+
+        /* 結果画面 */
+        .result-container { display: none; text-align: left; }
+        .result-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+        .type-subtitle { font-size: 16px; color: #666; margin-top: 5px; font-weight: bold; }
+        .type-title { font-size: 28px; color: var(--primary-color); font-weight: bold; margin: 10px 0; }
+        .result-img { max-width: 100%; height: auto; width: 320px; margin: 20px auto 10px; display: block; border-radius: 8px; }
+        .result-section { margin-bottom: 25px; padding: 20px; background-color: #fff; border-radius: 10px; border: 1px solid #eee; }
+        .section-strength { border-left: 5px solid #3498db; background-color: #f8fbff; }
+        .section-trap { border-left: 5px solid #e74c3c; background-color: #fff5f5; }
+        .section-advice { border-left: 5px solid #f1c40f; background-color: #fffff0; }
+        .section-course { border-left: 5px solid #2ecc71; background-color: #f0fff4; }
+        .section-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; display: block; color: var(--primary-color); }
+
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 480px) {
+            .container { padding: 25px; }
+            .question-text { font-size: 18px; }
+            .type-title { font-size: 24px; }
+            .option-btn { font-size: 15px; padding: 15px; }
+            .result-img { width: 80%; }
+            .deco-img { width: 70px; opacity: 0.15; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="mainContainer">
+    <!-- スタート画面 -->
+    <div id="startScreen">
+        <img src="result1.png" class="deco-img top-left" alt="">
+        <img src="result2.png" class="deco-img top-right" alt="">
+        <img src="result3.png" class="deco-img bottom-left" alt="">
+        <img src="result4.png" class="deco-img bottom-right" alt="">
+
+        <div class="fade-in">
+            <h1>通信課程編入適正診断</h1>
+            <p>
+                あなたの性格や行動パターンから、<br>
+                通信制大学での学習を成功させるための<br>
+                「最適な学習スタイル」と「注意点」を分析します。
+            </p>
+            <p style="font-size:14px; color:#666;">全15問 / 所要時間 約2分</p>
+            <!-- 変更：onclickで属性フォームへ -->
+            <button class="btn-start" onclick="showAttributeForm()">診断を始める</button>
+        </div>
+    </div>
+
+    <!-- 属性入力画面（新設） -->
+    <div id="attributeScreen" class="form-container">
+        <h2 style="text-align:center;">まずは教えてください</h2>
+        <p style="text-align:center; font-size:14px;">より正確な診断のため、以下の項目を入力してスタートしてください。</p>
+        
+        <div class="form-group">
+            <label class="form-label">年代</label>
+            <select id="userAge" class="form-select">
+                <option value="" disabled selected>選択してください</option>
+                <option value="10代">10代</option>
+                <option value="20代">20代</option>
+                <option value="30代">30代</option>
+                <option value="40代">40代</option>
+                <option value="50代">50代</option>
+                <option value="60代以上">60代以上</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">性別</label>
+            <select id="userGender" class="form-select">
+                <option value="" disabled selected>選択してください</option>
+                <option value="男性">男性</option>
+                <option value="女性">女性</option>
+                <option value="その他・回答しない">その他・回答しない</option>
+            </select>
+        </div>
+
+        <div style="text-align:center; margin-top:30px;">
+            <button class="btn-start" onclick="startQuizActual()">診断スタート</button>
+        </div>
+    </div>
+
+    <!-- 質問画面 -->
+    <div id="quizScreen" class="quiz-container">
+        <div class="progress" id="progressText">Q 1 / 15</div>
+        <div class="question-text" id="questionText">質問文</div>
+        <div class="options">
+            <button class="option-btn" onclick="answer('a')" id="btnA">A</button>
+            <button class="option-btn" onclick="answer('b')" id="btnB">B</button>
+            <button class="option-btn" onclick="answer('c')" id="btnC">C</button>
+            <button class="option-btn" onclick="answer('d')" id="btnD">D</button>
+        </div>
+    </div>
+
+    <!-- ローディング画面 -->
+    <div id="loadingScreen" class="loading-container">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingMainText">回答データを分析中...</div>
+        <div class="loading-subtext" id="loadingSubText">しばらくお待ちください</div>
+    </div>
+
+    <!-- 結果画面 -->
+    <div id="resultScreen" class="result-container">
+        <div class="result-header">
+            <div class="type-subtitle" id="resultSubtitle">キャッチコピー</div>
+            <h2 class="type-title" id="resultType">タイプ名</h2>
+            <img id="resultImage" src="" alt="診断結果イラスト" class="result-img">
+        </div>
+        <div class="result-section section-strength">
+            <span class="section-title">🔍 あなたの傾向と強み</span>
+            <div id="resStrength"></div>
+        </div>
+        <div class="result-section section-trap">
+            <span class="section-title">⚠️ 編入後に陥りやすい「落とし穴」</span>
+            <div id="resTrap"></div>
+        </div>
+        <div class="result-section section-advice">
+            <span class="section-title">💡 あなたへのアドバイス & 背中を押す一言</span>
+            <div id="resAdvice"></div>
+        </div>
+        <div class="result-section section-course">
+            <span class="section-title">🚀 当学習コースがあなたにできること</span>
+            <div id="resCourse"></div>
+        </div>
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn-retry" onclick="location.reload()">もう一度診断する</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ★ GASのURLをここに貼る
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzIMQ4YTwvuEvCN6SKAwGIUVRl0KVEXeFf9hdFpJ3TU1nJS6sVyBRdHOhxbrDFkCJFLfg/exec";
+
+    const questions = [
+        // ... (質問データは長いので省略しませんが、前のコードと同じです)
+        {
+            q: "Q1. 通信課程の勉強計画について、今の気持ちに近いのは？",
+            options: {
+                a: "仕事や生活のリズムに合わせて、無理なく効率的に進めたい",
+                b: "一人で抱え込まず、相談しながら進められる環境が欲しい",
+                c: "自分の興味・関心を最優先に、楽しく学びたい",
+                d: "まずは「絶対に挫折しない・失敗しない方法」を知って安心したい"
+            }
+        },
+        { q: "Q2. スクーリング（通学/対面授業）の日程が出たときの反応は？", options: { a: "仕事のシフトや休みと調整できるか、現実的な計算をする", b: "現地に行けるか、雰囲気に馴染めるか不安で誰かに相談したい", c: "興味のある内容や先生の講義なら、積極的に参加したい", d: "「ちゃんと出席できるか」「ついていけるか」緊張してしまう" } },
+        { q: "Q3. レポート課題に取り組むときの状況は？", options: { a: "締切から逆算し、仕事の合間を縫って効率よく仕上げる", b: "内容が合っているか不安で、誰かに確認したくて手が止まる", c: "調べものをしているうちに範囲が広がり、まとまらなくなる", d: "そもそも書き方が分からず、自信がなくて着手できない" } },
+        { q: "Q4. 実習について、まず気になるのは？", options: { a: "会社を休む期間や調整など、現実的に時間の確保が可能か", b: "困ったときに相談できる先輩やサポート体制があるか", c: "どんな機関に行けるのか、自分の知りたいことが学べるか", d: "現場で自分に務まるのか、迷惑をかけないか気後れする" } },
+        { q: "Q5. もし勉強が続かなくなるとしたら、その理由は？", options: { a: "仕事の繁忙期など、物理的に時間が確保できなくなる", b: "孤独感や不安が溜まり、誰にも相談できずにフェードアウトする", c: "他のことに興味が移ったり、情報の整理がつかなくなる", d: "「自分には無理かもしれない」と自信を失ってしまう" } },
+        { q: "Q6. 大学院進学に向けて、一番のハードルは？", options: { a: "働きながらの受験勉強や、学費・時間のやりくり", b: "何をどう準備すればよいか、指針やアドバイスがないこと", c: "研究テーマが絞りきれず、やりたいことが定まらない", d: "「今の自分の実力で合格できる気がしない」という不安" } },
+        { q: "Q7. 理想的な勉強の進め方は？", options: { a: "スケジュール通りに、無駄なく淡々とこなす", b: "誰かに方向性を確認してもらいながら進める", c: "興味の赴くまま、熱中できるものから手をつける", d: "小さな課題から始めて、少しずつ自信をつけていく" } },
+        { q: "Q8. 心理学の勉強をしていて困る（困りそうな）ことは？", options: { a: "まとまった勉強時間が取れず、細切れになってしまう", b: "自分の理解が正しいのか分からず、正解が欲しくなる", c: "ひとつを深掘りしすぎて、試験範囲が終わらない", d: "専門用語が難しく、どこから手をつけていいか分からない" } },
+        { q: "Q9. あなたのペースの傾向は？", options: { a: "計画通りに進むと安心するが、忙しいと一気に止まる", b: "誰かに進捗を見てもらったり、励まされると進む", c: "気分が乗ればやるが、興味がないと後回しにする", d: "そもそも「自分のペース」を作ることに自信がない" } },
+        { q: "Q10. 情報収集のクセは？", options: { a: "時間がないので、必要な情報だけを最短で得たい", b: "不安があるとつい検索しすぎるが、誰かの意見も聞きたい", c: "気になることを次々調べてしまい、ネットサーフィンが止まらない", d: "情報が多すぎると圧倒され、見るのが嫌になってしまう" } },
+        { q: "Q11. 通信教育の一番の壁だと思うのは？", options: { a: "「仕事・家事との両立」と「時間確保」", b: "孤独で相談できず、モチベーションが維持できないこと", c: "情報が多くて整理できず、何を優先すべきか迷うこと", d: "最後までやり遂げられるか、能力的な自信がないこと" } },
+        { q: "Q12. レポート提出が連続する時期、どうなりそう？", options: { a: "優先順位をつけて、「消化試合」になっても期限を守る", b: "添削やアドバイスが欲しくて、提出前に誰かを探してしまう", c: "調べものが広がって収拾がつかず、締切ギリギリになる", d: "失敗や再提出が怖くて、なかなか提出ボタンが押せない" } },
+        { q: "Q13. 自分の性格に近いのは？", options: { a: "物事を現実的・合理的に考え、工夫して動く", b: "人との繋がりやサポートがあると力を発揮する", c: "好奇心が強く、気になったことはとことん調べたい", d: "慎重派で、石橋を叩いて渡る（または渡れない）" } },
+        { q: "Q14. 学習が止まりそうになったとき、何があれば復活できる？", options: { a: "現実的なスケジュール修正や、効率の良い時短勉強法", b: "悩みを聞いてくれる相談相手や、励まし", c: "「今やるべきこと」の明確化と、情報の整理", d: "「これならできた」という小さな成功体験" } },
+        { q: "Q15. 最終的に目指したい姿は？", options: { a: "仕事と学業をスマートに両立し、最短ルートで目標達成", b: "安心して学べる環境で、仲間と共に成長する", c: "自分の興味・強みを活かしつつ、合格に必要な知識を身につける", d: "基礎からしっかり固め、自信をもって大学院進学を果たす" } }
+    ];
+
+    const results = {
+        a: { title: "【効率重視のリアリストタイプ】", subtitle: "〜時間という資源を制する、賢明な戦略家〜", img: "result1.png", strength: "...", trap: "...", advice: "...", course: "..." },
+        b: { title: "【一人じゃ不安・伴走要請タイプ】", subtitle: "〜石橋を叩いて渡る慎重派。確実性を求める真面目な努力家〜", img: "result2.png", strength: "...", trap: "...", advice: "...", course: "..." },
+        c: { title: "【興味は高いが方向が散るタイプ】", subtitle: "〜知的好奇心の塊。広い視野を持つ未来の研究者〜", img: "result3.png", strength: "...", trap: "...", advice: "...", course: "..." },
+        d: { title: "【ブランク・挫折経験ありタイプ】", subtitle: "〜痛みがわかる優しさ。再起を誓うレジリエンス（回復力）の持ち主〜", img: "result4.png", strength: "...", trap: "...", advice: "...", course: "..." }
+    };
+
+    // 結果データの中身（長くなるので省略していましたが、元のコードのデータを入れてください）
+    // ※ 動作確認用に戻します
+    results.a.strength = `<p>あなたは、勢いだけで無謀な挑戦をするのではなく、「今の生活（仕事・家庭）を壊さずに、どうすればゴールできるか」を冷静に見極めようとする、非常にバランス感覚に優れた人です。</p><p>「忙しい中で時間を捻出する工夫」や「リスクを避けるための事前調査」を怠らないその姿勢は、心理職に必須の<strong>「マネジメント能力」と「客観的視点」の高さ</strong>そのものです。</p>`;
+    results.a.trap = `<p>あなたの敵は、「想定外のトラブル」と「非効率な学習」です。</p><p>通信制大学では、情報が散乱しており、「何を・どの順番で・どこまで」やればいいかが不明確になりがちです。真面目なあなたは、見通しが立たないと「このままで大丈夫か？」と不安になったり、全てを完璧にこなそうとして時間が足りなくなり、「割に合わない」と判断してリタイアしてしまうリスクがあります。</p>`;
+    results.a.advice = `<p><strong>「『根性』ではなく、『戦略』で勝負すれば必ず勝てます」</strong></p><p>あなたに必要なのは、闇雲な努力ではありません。「ここだけやれば合格できる」というボーダーラインと、「いつ何が起きるか」という全体地図です。</p><p>100点を目指す必要はありません。忙しいあなたが勝つ方法は<strong>「やらないことを決める（＝捨てる勇気）」</strong>を持つこと。最短ルートが見えさえすれば、あなたは誰よりも確実にゴールテープを切れる人です。</p>`;
+    results.a.course = `<p>このコースが提供するのは、<strong>「迷う時間の徹底排除」と「最短攻略ルート」です。</strong></p><p>リアリストのあなたが最も欲している「仕事と両立可能な現実的ロードマップ」の作成に加え、ゼロから考える時間をカットするための「レポートテンプレート」や「要点凝縮教材」を用意。</p><p>情報収集やスケジュール調整にかかるストレスを私たちが引き受け、あなたは「合格に必要なことだけ」に集中できる環境を提供します。</p>`;
+
+    results.b.strength = `<p>あなたは「やるべきこと」が明確であれば、高い集中力を発揮できる人です。独りよがりにならず、「正しい知識」を吸収しようとする姿勢は、学問において非常に重要です。</p><p>「今のやり方で合っているか？」と常に確認したくなるのは、あなたが誠実で、適当な仕事をしたくないというプロ意識を持っているからです。その誠実さは、将来対人援助職に就いた際の大きな信頼になります。</p>`;
+    results.b.trap = `<p>通信制大学の最大の壁である「孤独」に最も弱いタイプです。</p><p>レポート課題で少しでも分からない箇所があると、「間違ったまま進めたくない」という心理が働き、そこで思考がストップしてしまいます。結果、相談できる相手がいないと、たった一つの課題で数ヶ月停滞してしまうリスクがあります。</p>`;
+    results.b.advice = `<p><strong>「『迷っている時間』を『学ぶ時間』に変えれば、合格はすぐそこです」</strong></p><p>あなたに必要なのは、地図とコンパス、そして隣で「その道で合ってますよ」と言ってくれるガイドです。孤独さえ解消できれば、あなたの学習スピードは劇的に上がります。</p>`;
+    results.b.course = `<p>私たちがいれば、もう一人で悩む夜はなくなります。<strong>「レポート添削」と「定期メンタリング」</strong>で、あなたの進捗を常にフィードバック。</p><p>「これで合っている」という確信を持って勉強できるよう、私たちがあなたのペースメーカー（伴走者）になります。</p>`;
+
+    results.c.strength = `<p>あなたは本当に心理学（または専攻分野）が好きなのですね。一つのことを調べ始めると、関連書籍まで読みふけってしまう…その<strong>「探究心」と「知的好奇心」は、大学院進学や研究者として不可欠な素質</strong>です。</p><p>ただ単位を取るだけでなく、「深く理解したい」という欲求があるあなたは、知識の吸収量が人一倍多く、将来的に深みのある専門家になれるでしょう。</p>`;
+    results.c.trap = `<p>「あれもこれも」と手を広げすぎて、肝心の「卒業・資格取得」というゴールが霞んでしまうことです。</p><p>興味の赴くままに本を読んでいたらレポートの期限が過ぎていた、研究テーマが壮大すぎてまとまらない…といった「消化不良」に陥りやすい傾向があります。</p>`;
+    results.c.advice = `<p><strong>「その溢れる情熱に『枠組み』を与えれば、最強の武器になります」</strong></p><p>あなたの知識欲は素晴らしいエンジンです。あとは「こっちに進む」というハンドル操作さえあればいい。情報の取捨選択さえできれば、あなたは楽しみながらトップレベルの成績で卒業できるでしょう。</p>`;
+    results.c.course = `<p>知識の森で迷子になりがちなあなたに、<strong>「最短ルートの地図」</strong>を渡します。</p><p><strong>「必修科目の優先順位付け」や、あなたの漠然とした関心を学術的な研究計画書に落とし込むための「テーマ絞り込みサポート」</strong>を行い、あなたの情熱を確実に「合格」という結果に結びつけます。</p>`;
+
+    results.d.strength = `<p>過去にうまくいかなかった経験があるにも関わらず、もう一度挑戦しようとしている。その事実こそが、あなたの最大の強みである<strong>「レジリエンス（立ち直る力）」</strong>の証明です。</p><p>挫折の痛みや、うまくいかない自分へのもどかしさを知っているあなたは、将来カウンセラーなどになった時、誰よりもクライエントの痛みに寄り添える存在になれます。その「弱さ」は、この分野では強力な「武器」なのです。</p>`;
+    results.d.trap = `<p>「どうせまた続かないのでは…」という自己否定の声です。</p><p>少しでも難しい課題や、やる気が出ない日があると、過去の失敗と結びつけてしまい、「やっぱり自分には向いていない」と早々に結論づけてしまう恐れがあります。実は能力の問題ではなく、メンタルのブロックが壁になっています。</p>`;
+    results.d.advice = `<p><strong>「過去の失敗は、今回成功するための『データの蓄積』に過ぎません」</strong></p><p>前回続かなかったのは、あなたの意志が弱かったからではなく、「続く仕組み」がなかったからです。適切なサポートとスモールステップさえあれば、今度のあなたは絶対に最後までやり遂げられます。</p>`;
+    results.d.course = `<p>当コースでは、いきなり高いハードルは課しません。</p><p>PC操作やレポートの書き方の基本から、「これならできる」と思える小さな成功体験を積み上げます。不安になった時はいつでも相談してください。<strong>「今度こそ絶対に卒業・合格させる」</strong>という覚悟で、私たちが最後の一歩まで支え抜きます。</p>`;
+
+
+    let currentQuestionIndex = 0;
+    let scores = { a: 0, b: 0, c: 0, d: 0 };
+    let userAnswers = []; 
+    // 年齢と性別を保存する変数
+    let userAge = "";
+    let userGender = "";
+
+    // 1. スタート画面から属性フォームへ遷移
+    function showAttributeForm() {
+        // スタート画面のコンテンツを非表示（画像は残る）
+        document.querySelector("#startScreen .fade-in").style.display = "none";
+        // フォームを表示
+        const formScreen = document.getElementById("attributeScreen");
+        formScreen.style.display = "block";
+        formScreen.classList.add("fade-in");
+    }
+
+    // 2. 属性フォームから診断開始（バリデーション付き）
+    function startQuizActual() {
+        const ageSelect = document.getElementById("userAge");
+        const genderSelect = document.getElementById("userGender");
+
+        if (ageSelect.value === "" || genderSelect.value === "") {
+            alert("年齢と性別を選択してください");
+            return;
+        }
+
+        userAge = ageSelect.value;
+        userGender = genderSelect.value;
+
+        // スタート画面全体を消す
+        document.getElementById('startScreen').style.display = 'none';
+        document.getElementById('attributeScreen').style.display = 'none';
+
+        // 診断画面へ
+        document.getElementById('quizScreen').style.display = 'block';
+        document.getElementById('quizScreen').classList.add('fade-in');
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const q = questions[currentQuestionIndex];
+        document.getElementById('questionText').textContent = q.q;
+        document.getElementById('progressText').textContent = `Q ${currentQuestionIndex + 1} / ${questions.length}`;
+        
+        document.getElementById('btnA').innerText = q.options.a;
+        document.getElementById('btnB').innerText = q.options.b;
+        document.getElementById('btnC').innerText = q.options.c;
+        document.getElementById('btnD').innerText = q.options.d;
+
+        const quizScreen = document.getElementById('quizScreen');
+        quizScreen.classList.remove('fade-in');
+        void quizScreen.offsetWidth;
+        quizScreen.classList.add('fade-in');
+        window.scrollTo(0,0);
+    }
+
+    function answer(type) {
+        userAnswers.push(type);
+        scores[type]++;
+        currentQuestionIndex++;
+
+        if (currentQuestionIndex < questions.length) {
+            showQuestion();
+        } else {
+            showLoading();
+        }
+    }
+
+    function showLoading() {
+        document.getElementById('quizScreen').style.display = 'none';
+        document.getElementById('loadingScreen').style.display = 'block';
+        document.getElementById('loadingScreen').classList.add('fade-in');
+        window.scrollTo(0,0);
+
+        const mainText = document.getElementById('loadingMainText');
+
+        setTimeout(() => { mainText.innerText = "傾向を照合中..."; }, 1500);
+        setTimeout(() => { mainText.innerText = "診断結果を作成中..."; }, 3500);
+        setTimeout(() => {
+            document.getElementById('loadingScreen').style.display = 'none';
+            showResult();
+        }, 5000);
+    }
+
+    function showResult() {
+        document.getElementById('resultScreen').style.display = 'block';
+        document.getElementById('resultScreen').classList.add('fade-in');
+        window.scrollTo(0,0);
+
+        let maxScore = -1;
+        let maxType = 'a';
+
+        for (let type in scores) {
+            if (scores[type] > maxScore) {
+                maxScore = scores[type];
+                maxType = type;
+            }
+        }
+
+        const data = results[maxType];
+
+        document.getElementById('resultSubtitle').textContent = data.subtitle;
+        document.getElementById('resultType').textContent = data.title;
+        document.getElementById('resultImage').src = data.img;
+        
+        document.getElementById('resStrength').innerHTML = data.strength;
+        document.getElementById('resTrap').innerHTML = data.trap;
+        document.getElementById('resAdvice').innerHTML = data.advice;
+        document.getElementById('resCourse').innerHTML = data.course;
+// ★★★ スプレッドシートへ送信（最終版） ★★★
+        if (GOOGLE_SCRIPT_URL) {
+            const postData = {
+                age: userAge,
+                gender: userGender,
+                resultType: data.title,
+                answers: userAnswers
+            };
+
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors", // エラーチェックを無効化して一方的に送る
+                headers: {
+                    "Content-Type": "text/plain" // シンプルなテキストとして送る
+                },
+                body: JSON.stringify(postData)
+            }).then(() => {
+                console.log("送信処理完了");
+            }).catch(err => {
+                console.error("送信エラー（無視してOKな場合あり）", err);
+            });
+        }
+    }
+</script>
+
+</body>
+</html>
